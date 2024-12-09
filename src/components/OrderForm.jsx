@@ -1,47 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import { HiX } from "react-icons/hi";
+import { getColors, addOrder } from "../lib/supabase";
 
-const ColorCard = ({ name, stock, color, quantity, onQuantityChange }) => (
-  <div
-    className="bg-white rounded-lg shadow cursor-pointer overflow-hidden"
-    onClick={() => onQuantityChange(name, (quantity || 0) + 1)}
-  >
-    {/* Color Header */}
-    <div className="h-8 w-full" style={{ backgroundColor: color }} />
-
-    {/* Content */}
-    <div className="p-3 text-center">
-      <div className="text-blue-600 font-medium">{name}</div>
-      <div className="text-gray-600">{stock}</div>
+const ColorButton = ({ name, stock, color, quantity, onQuantityChange }) => (
+  <div className="flex flex-col border rounded-lg overflow-hidden shadow-sm">
+    <div
+      className="p-3 sm:p-2 text-center relative"
+      style={{ backgroundColor: color }}
+    >
+      <span className="font-medium text-base sm:text-sm">{name}</span>
+      <span className="absolute right-2 top-2 text-sm sm:text-xs">{stock}</span>
     </div>
-
-    {/* Input */}
-    <div className="border-t flex">
+    <div className="flex items-center justify-between p-3 sm:p-2 bg-white">
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onQuantityChange(name, Math.max(0, (quantity || 0) - 1));
-        }}
-        className="w-12 py-2 text-xl font-medium hover:bg-gray-100"
+        onClick={() => onQuantityChange(Math.max(0, quantity - 1))}
+        className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 active:bg-gray-300 touch-manipulation"
       >
         -
       </button>
       <input
-        type="text"
-        value={quantity || 0}
-        onChange={(e) => {
-          e.stopPropagation();
-          onQuantityChange(name, parseInt(e.target.value) || 0);
-        }}
-        onClick={(e) => e.stopPropagation()}
-        className="flex-1 text-center border-x py-2"
+        type="number"
+        value={quantity}
+        onChange={(e) => onQuantityChange(parseInt(e.target.value) || 0)}
+        className="w-16 sm:w-12 h-10 sm:h-8 text-center border rounded mx-1 text-base sm:text-sm"
+        min="0"
       />
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onQuantityChange(name, (quantity || 0) + 1);
-        }}
-        className="w-12 py-2 text-xl font-medium hover:bg-gray-100"
+        onClick={() => onQuantityChange(quantity + 1)}
+        className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 active:bg-gray-300 touch-manipulation"
       >
         +
       </button>
@@ -49,249 +36,300 @@ const ColorCard = ({ name, stock, color, quantity, onQuantityChange }) => (
   </div>
 );
 
-ColorCard.propTypes = {
+ColorButton.propTypes = {
   name: PropTypes.string.isRequired,
   stock: PropTypes.number.isRequired,
   color: PropTypes.string.isRequired,
-  quantity: PropTypes.number,
+  quantity: PropTypes.number.isRequired,
   onQuantityChange: PropTypes.func.isRequired,
 };
 
-const OrderForm = ({ party, onClose }) => {
-  const [selectedTab, setSelectedTab] = useState("5 TAR");
-  const [quantities, setQuantities] = useState({});
-  const [deliveryQuantities, setDeliveryQuantities] = useState({});
+const ColorSummaryTable = ({ title, colors, quantities }) => (
+  <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto">
+    <h3 className="font-medium mb-2 text-base sm:text-sm sticky left-0">
+      {title}:-
+    </h3>
+    <div className="min-w-[600px]">
+      <table className="w-full">
+        <thead>
+          <tr className="bg-gray-200">
+            <th className="p-2 text-left text-sm">#</th>
+            <th className="p-2 text-left text-sm">Color</th>
+            <th className="p-2 text-center text-sm">Req.</th>
+            <th className="p-2 text-center text-sm">Delivery</th>
+            <th className="p-2 text-center text-sm">Add</th>
+          </tr>
+        </thead>
+        <tbody>
+          {colors.map((color, index) => (
+            <tr key={color.id} className="border-b">
+              <td className="p-2 text-sm">{index + 1}</td>
+              <td className="p-2">
+                <div className="flex items-center">
+                  <div
+                    className="w-4 h-4 rounded-full mr-2"
+                    style={{ backgroundColor: color.hex_code }}
+                  />
+                  <span className="text-sm">{color.name.toLowerCase()}</span>
+                </div>
+              </td>
+              <td className="p-2 text-center text-sm">
+                {quantities[color.id] || 0}
+              </td>
+              <td className="p-2 text-center text-sm">
+                {quantities[color.id] || 0}
+              </td>
+              <td className="p-2 text-center text-sm">-</td>
+            </tr>
+          ))}
+          <tr className="font-medium bg-gray-100">
+            <td colSpan="2" className="p-2 text-sm">
+              Total
+            </td>
+            <td className="p-2 text-center text-sm">
+              {Object.values(quantities).reduce((a, b) => a + b, 0)}
+            </td>
+            <td className="p-2 text-center text-sm">
+              {Object.values(quantities).reduce((a, b) => a + b, 0)}
+            </td>
+            <td className="p-2 text-center text-sm">0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 
-  const tabs = ["5 TAR", "3 TAR", "YARN"];
+ColorSummaryTable.propTypes = {
+  title: PropTypes.string.isRequired,
+  colors: PropTypes.array.isRequired,
+  quantities: PropTypes.object.isRequired,
+};
 
-  const colors = {
-    Cetionic: {
-      Red: { stock: 2, color: "#ff0000" },
-      Rani: { stock: 13, color: "#f716ec" },
-      "R Blue": { stock: 15, color: "#4169e1" },
-      Green: { stock: -7, color: "#008000" },
-      Orange: { stock: 19, color: "#ffa500" },
-      Jambli: { stock: 8, color: "#800080" },
-      Majenta: { stock: 3, color: "#ff00ff" },
-      Firozi: { stock: 5, color: "#40e0d0" },
-      Rama: { stock: 4, color: "#006400" },
-      Golden: { stock: 12, color: "#ffd700" },
-      Perot: { stock: 3, color: "#90ee90" },
-      Gajari: { stock: 3, color: "#dc143c" },
-      "N Blue": { stock: 2, color: "#000080" },
-      Chiku: { stock: 16, color: "#d2b48c" },
-      "C Green": { stock: 12, color: "#98ff98" },
-      Oninen: { stock: 5, color: "#8b4513" },
-      "L Green": { stock: 8, color: "#32cd32" },
-      "L Perot": { stock: 2, color: "#98fb98" },
-    },
-    Litchy: {
-      White: { stock: 2, color: "#ffffff" },
-      LEMON: { stock: 0, color: "#fff44f" },
-      "L MAHENDI": { stock: 15, color: "#228b22" },
-    },
-    Polyester: {
-      Black: { stock: 14, color: "#000000" },
-      Mahron: { stock: 3, color: "#800000" },
-      Gray: { stock: -3, color: "#808080" },
-      "B Cream": { stock: -3, color: "#ffe4c4" },
-      "D Pink": { stock: -1, color: "#ff1493" },
-      Wine: { stock: -1, color: "#722f37" },
-    },
-    Multy: {
-      "D Multy": { stock: 0, color: "#ff00ff" },
-      "L Multy": { stock: 0, color: "#ff69b4" },
-      "AK Multy": { stock: 0, color: "#ff1493" },
-    },
-  };
+const OrderForm = ({ party, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split("T")[0],
+    items: {},
+  });
 
-  const handleQuantityChange = (colorName, value, type = "order") => {
-    const setValue = (prev) => ({
-      ...prev,
-      [colorName]: Math.max(0, value),
-    });
+  const [colors, setColors] = useState({
+    Cetionic: [],
+    Itchy: [],
+    Polyester: [],
+    Multy: [],
+  });
 
-    if (type === "order") {
-      setQuantities(setValue);
-      // Auto-set delivery quantity to match order quantity
-      setDeliveryQuantities((prev) => ({
-        ...prev,
-        [colorName]: Math.max(0, value),
-      }));
-    } else {
-      setDeliveryQuantities(setValue);
+  console.log(colors);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeCategory, setActiveCategory] = useState("Cetionic");
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const colorsData = await getColors();
+
+      console.log(colorsData);
+
+      // Organize colors by category
+      const organizedColors = colorsData.reduce(
+        (acc, color) => {
+          const category = color.category.name || "Cetionic";
+          if (!acc[category]) acc[category] = [];
+          acc[category].push({
+            ...color,
+            hex_code: getColorHexCode(color.name.toLowerCase()),
+          });
+          return acc;
+        },
+        {
+          Cetionic: [],
+          Itchy: [],
+          Polyester: [],
+          Multy: [],
+        }
+      );
+
+      setColors(organizedColors);
+      setError(null);
+    } catch (err) {
+      console.error("Error loading colors:", err);
+      setError("Failed to load colors. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getActiveColors = () => {
-    return Object.entries(quantities)
-      .filter(([, quantity]) => quantity > 0)
-      .map(([name]) => ({
-        name,
-        orderQty: quantities[name],
-        deliveryQty: deliveryQuantities[name] || quantities[name],
-      }));
+  const getColorHexCode = (name) => {
+    const colorMap = {
+      red: "#ff0000",
+      blue: "#0000ff",
+      green: "#00ff00",
+      orange: "#ffa500",
+      black: "#000000",
+      white: "#ffffff",
+      gray: "#808080",
+      pink: "#ffc0cb",
+      purple: "#800080",
+      yellow: "#ffff00",
+      brown: "#a52a2a",
+      // Add more color mappings as needed
+    };
+    return colorMap[name] || "#cccccc";
   };
 
-  const getTotalQuantities = () => {
-    const activeColors = getActiveColors();
-    return {
-      orderTotal: activeColors.reduce((sum, color) => sum + color.orderQty, 0),
-      deliveryTotal: activeColors.reduce(
-        (sum, color) => sum + color.deliveryQty,
-        0
-      ),
-    };
+  const handleQuantityChange = (colorId, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      items: {
+        ...prev.items,
+        [colorId]: value,
+      },
+    }));
   };
+
+  const handleSubmit = async () => {
+    try {
+      const orderItems = Object.entries(formData.items)
+        .filter(([, quantity]) => quantity > 0)
+        .map(([colorId, quantity]) => ({
+          color_id: parseInt(colorId),
+          quantity: parseInt(quantity),
+        }));
+
+      if (orderItems.length === 0) {
+        alert("Please add at least one item to the order");
+        return;
+      }
+
+      const orderData = {
+        party_id: party.id,
+        date: formData.date,
+        items: orderItems,
+      };
+
+      await addOrder(orderData);
+      onSave();
+    } catch (err) {
+      console.error("Error saving order:", err);
+      alert("Failed to save order. Please try again.");
+    }
+  };
+
+  if (loading) return <div className="text-center p-4">Loading...</div>;
+  if (error) return <div className="text-center text-red-600 p-4">{error}</div>;
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Header */}
-      <div className="border-b p-4">
-        <div className="flex justify-between items-center gap-4">
-          {/* Left Side - Party Info */}
-          <div className="flex gap-4">
-            <div>
-              <label className="text-sm text-gray-600">Party Name</label>
-              <div className="font-medium">{party.name}</div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center overflow-auto">
+      <div className="bg-white rounded-lg w-full max-w-7xl my-4 mx-2">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border-b space-y-4 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Party Name:</span>
+              <span className="font-medium">{party.name}</span>
             </div>
-            <div>
-              <label className="text-sm text-gray-600">Address</label>
-              <div className="font-medium">{party.address}</div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Address:</span>
+              <span>{party.address}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Order ID:</span>
+              <span>#</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Date:</span>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, date: e.target.value }))
+                }
+                className="border rounded px-2 py-1"
+              />
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full ml-auto sm:ml-0"
+          >
+            <HiX className="w-6 h-6 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="flex flex-col lg:flex-row">
+          {/* Left side - Color selection */}
+          <div className="flex-1 p-4 lg:border-r">
+            {/* Category tabs */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {Object.keys(colors).map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setActiveCategory(category)}
+                  className={`px-4 py-2 rounded text-sm ${
+                    activeCategory === category
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+
+            {/* Color grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {colors[activeCategory].map((color) => (
+                <ColorButton
+                  key={color.id}
+                  name={color.name}
+                  stock={color.stock || 0}
+                  color={color.hex_code}
+                  quantity={formData.items[color.id] || 0}
+                  onQuantityChange={(value) =>
+                    handleQuantityChange(color.id, value)
+                  }
+                />
+              ))}
             </div>
           </div>
 
-          {/* Right Side - Order Info & Actions */}
-          <div className="flex items-center gap-4">
-            <div>
-              <label className="text-sm text-gray-600">Order ID</label>
-              <div className="font-medium">#</div>
-            </div>
-            <div>
-              <label className="text-sm text-gray-600">Date</label>
-              <div className="font-medium">
-                {new Date().toLocaleDateString()}
-              </div>
-            </div>
-            <div className="flex gap-2 ml-4">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200"
-              >
-                Close
-              </button>
-              <button className="px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200">
-                Hold
-              </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Bill
-              </button>
-            </div>
+          {/* Right side - Summary tables */}
+          <div className="w-full lg:w-96 p-4 space-y-4">
+            {Object.entries(colors).map(([category, categoryColors]) => (
+              <ColorSummaryTable
+                key={category}
+                title={category}
+                colors={categoryColors}
+                quantities={formData.items}
+              />
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="border-b">
-        <div className="flex">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              className={`px-6 py-2 focus:outline-none ${
-                selectedTab === tab
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-              onClick={() => setSelectedTab(tab)}
-            >
-              {tab}
+        {/* Footer */}
+        <div className="border-t p-4 flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0">
+          <div className="flex space-x-4">
+            <button className="flex-1 sm:flex-none px-6 py-3 sm:py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 active:bg-cyan-700 text-base sm:text-sm">
+              Hold
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex">
-        {/* Left Side - Color Selection */}
-        <div className="w-2/3 p-4 border-r">
-          {Object.entries(colors).map(([category, categoryColors]) => (
-            <div key={category} className="mb-8">
-              <h3 className="font-medium mb-4">{category} :-</h3>
-              <div className="grid grid-cols-3 gap-4">
-                {Object.entries(categoryColors).map(
-                  ([name, { stock, color }]) => (
-                    <ColorCard
-                      key={name}
-                      name={name}
-                      stock={stock}
-                      color={color}
-                      quantity={quantities[name]}
-                      onQuantityChange={handleQuantityChange}
-                    />
-                  )
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Right Side - Selected Colors */}
-        <div className="w-1/3 p-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-medium mb-4">{selectedTab} :-</h3>
-            <table className="w-full">
-              <thead>
-                <tr className="text-sm text-gray-600">
-                  <th className="text-left py-2">#</th>
-                  <th className="text-left py-2">Color</th>
-                  <th className="text-center py-2">Req.</th>
-                  <th className="text-center py-2">Delivery</th>
-                  <th className="text-center py-2">Add</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getActiveColors().map((color, index) => (
-                  <tr key={color.name} className="border-t">
-                    <td className="py-2">{index + 1}</td>
-                    <td className="py-2">{color.name}</td>
-                    <td className="text-center py-2">{color.orderQty}</td>
-                    <td className="text-center py-2">
-                      <input
-                        type="number"
-                        value={color.deliveryQty}
-                        onChange={(e) =>
-                          handleQuantityChange(
-                            color.name,
-                            parseInt(e.target.value) || 0,
-                            "delivery"
-                          )
-                        }
-                        className="w-16 text-center border rounded-md p-1"
-                      />
-                    </td>
-                    <td className="text-center py-2">
-                      {color.deliveryQty - color.orderQty}
-                    </td>
-                  </tr>
-                ))}
-                <tr className="border-t font-medium">
-                  <td colSpan="2" className="py-2">
-                    Total
-                  </td>
-                  <td className="text-center py-2">
-                    {getTotalQuantities().orderTotal}
-                  </td>
-                  <td className="text-center py-2">
-                    {getTotalQuantities().deliveryTotal}
-                  </td>
-                  <td className="text-center py-2">
-                    {getTotalQuantities().deliveryTotal -
-                      getTotalQuantities().orderTotal}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <button
+              onClick={() => setFormData((prev) => ({ ...prev, items: {} }))}
+              className="flex-1 sm:flex-none px-6 py-3 sm:py-2 bg-red-500 text-white rounded hover:bg-red-600 active:bg-red-700 text-base sm:text-sm"
+            >
+              Clear
+            </button>
           </div>
+          <button
+            onClick={handleSubmit}
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 text-base sm:text-sm"
+          >
+            Bill
+          </button>
         </div>
       </div>
     </div>
@@ -300,10 +338,12 @@ const OrderForm = ({ party, onClose }) => {
 
 OrderForm.propTypes = {
   party: PropTypes.shape({
+    id: PropTypes.string,
     name: PropTypes.string.isRequired,
     address: PropTypes.string.isRequired,
   }).isRequired,
   onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
 };
 
 export default OrderForm;

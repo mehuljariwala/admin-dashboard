@@ -1,165 +1,272 @@
-import { useState } from "react";
-import { HiMinus, HiPlus } from "react-icons/hi";
+import { useState, useEffect } from "react";
+import {
+  getColors,
+  getInventoryTransactions,
+  addInventoryTransaction,
+} from "../lib/supabase";
+import { format } from "date-fns";
+import Shimmer from "../components/Shimmer";
 
-const Inventory = () => {
-  const [activeTab, setActiveTab] = useState("5 Tar");
-  const [quantities, setQuantities] = useState({});
+export default function Inventory() {
+  const [colors, setColors] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
+    color_id: "",
+    quantity: "",
+    transaction_type: "IN",
+    reference_type: "ADJUSTMENT",
+    notes: "",
+  });
 
-  const tabs = ["5 Tar", "3 Tar", "Yarn"];
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const inventoryData = {
-    "5 Tar": [
-      { color: "#ff0000", name: "Red", stock: 2 },
-      { color: "#f716ec", name: "Rani", stock: 7 },
-      { color: "#4169e1", name: "R Blue", stock: 16 },
-      { color: "#008000", name: "Green", stock: -9 },
-      { color: "#ffa500", name: "Orange", stock: 19 },
-      { color: "#800080", name: "Jambli", stock: 9 },
-      { color: "#ff00ff", name: "Majenta", stock: -2 },
-      { color: "#40e0d0", name: "Firozi", stock: 0 },
-      { color: "#006400", name: "Rama", stock: -7 },
-      { color: "#ffd700", name: "Golden", stock: 13 },
-      { color: "#90ee90", name: "Perot", stock: 4 },
-      { color: "#dc143c", name: "Gajari", stock: 1 },
-      { color: "#000080", name: "N Blue", stock: -3 },
-      { color: "#d2b48c", name: "Chiku", stock: 2 },
-      { color: "#98ff98", name: "C Green", stock: 13 },
-      { color: "#8b4513", name: "Oninen", stock: 2 },
-      { color: "#32cd32", name: "L Green", stock: 8 },
-      { color: "#98fb98", name: "L Perot", stock: 3 },
-      { color: "#000000", name: "Black", stock: 9 },
-      { color: "#800000", name: "Mahrron", stock: -5 },
-    ],
-    "3 Tar": [
-      { color: "#ff0000", name: "Red", stock: 18 },
-      { color: "#f716ec", name: "Rani", stock: 20 },
-      { color: "#4169e1", name: "R Blue", stock: 25 },
-      { color: "#008000", name: "Green", stock: 4 },
-      { color: "#ffa500", name: "Orange", stock: 18 },
-      { color: "#800080", name: "Jambli", stock: 6 },
-      // Add more items as needed
-    ],
-    Yarn: [
-      { color: "#ff0000", name: "Red", stock: 7 },
-      { color: "#f716ec", name: "Rani", stock: 12 },
-      { color: "#4169e1", name: "R Blue", stock: 31 },
-      { color: "#008000", name: "Green", stock: 7 },
-      { color: "#ffa500", name: "Orange", stock: 43 },
-      { color: "#800080", name: "Jambli", stock: 18 },
-      // Add more items as needed
-    ],
-  };
-
-  const handleQuantityChange = (name, value) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleIncrement = (name) => {
-    const currentValue = parseInt(quantities[name] || "0");
-    handleQuantityChange(name, currentValue + 1);
-  };
-
-  const handleDecrement = (name) => {
-    const currentValue = parseInt(quantities[name] || "0");
-    if (currentValue > 0) {
-      handleQuantityChange(name, currentValue - 1);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [colorsData, transactionsData] = await Promise.all([
+        getColors(),
+        getInventoryTransactions(),
+      ]);
+      setColors(colorsData);
+      setTransactions(transactionsData);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-800 underline">
-        Inventory
-      </h1>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await addInventoryTransaction({
+        ...formData,
+        quantity: parseInt(formData.quantity),
+      });
+      setShowAddModal(false);
+      setFormData({
+        color_id: "",
+        quantity: "",
+        transaction_type: "IN",
+        reference_type: "ADJUSTMENT",
+        notes: "",
+      });
+      loadData();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
-      {/* Tabs */}
-      <div className="flex space-x-4 border-b">
-        {tabs.map((tab) => (
+  if (loading)
+    return (
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Inventory Management</h1>
           <button
-            key={tab}
-            className={`py-2 px-4 ${
-              activeTab === tab
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-            onClick={() => setActiveTab(tab)}
+            disabled
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 opacity-50 cursor-not-allowed"
           >
-            {tab}
+            Add Transaction
           </button>
-        ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg shadow p-4">
+            <h2 className="text-xl font-semibold mb-4">Current Stock Levels</h2>
+            <Shimmer rows={4} />
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
+            <Shimmer rows={4} />
+          </div>
+        </div>
+      </div>
+    );
+
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+
+  return (
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Inventory Management</h1>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Add Transaction
+        </button>
       </div>
 
-      {/* Inventory Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Colour Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Colour Stock
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {inventoryData[activeTab].map((item, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div
-                    className="w-6 h-6 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  ></div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {item.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {item.stock}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleDecrement(item.name)}
-                      className="p-1 rounded-md hover:bg-gray-100"
-                    >
-                      <HiMinus className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <input
-                      type="number"
-                      value={quantities[item.name] || 0}
-                      onChange={(e) =>
-                        handleQuantityChange(
-                          item.name,
-                          parseInt(e.target.value) || 0
-                        )
-                      }
-                      className="w-16 px-2 py-1 text-center border rounded-md"
-                    />
-                    <button
-                      onClick={() => handleIncrement(item.name)}
-                      className="p-1 rounded-md hover:bg-gray-100"
-                    >
-                      <HiPlus className="w-5 h-5 text-gray-600" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-xl font-semibold mb-4">Current Stock Levels</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">Color</th>
+                  <th className="px-4 py-2 text-left">Category</th>
+                  <th className="px-4 py-2 text-left">Stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                {colors.map((color) => (
+                  <tr key={color.id}>
+                    <td className="px-4 py-2">{color.name}</td>
+                    <td className="px-4 py-2">{color.category}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`px-2 py-1 rounded ${
+                          color.stock > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {color.stock}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">Date</th>
+                  <th className="px-4 py-2 text-left">Color</th>
+                  <th className="px-4 py-2 text-left">Type</th>
+                  <th className="px-4 py-2 text-left">Quantity</th>
+                  <th className="px-4 py-2 text-left">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="px-4 py-2">
+                      {format(new Date(transaction.created_at), "dd/MM/yyyy")}
+                    </td>
+                    <td className="px-4 py-2">{transaction.color.name}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`px-2 py-1 rounded ${
+                          transaction.transaction_type === "IN"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {transaction.transaction_type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">{transaction.quantity}</td>
+                    <td className="px-4 py-2">{transaction.notes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Add Transaction</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Color
+                </label>
+                <select
+                  value={formData.color_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, color_id: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select a color</option>
+                  {colors.map((color) => (
+                    <option key={color.id} value={color.id}>
+                      {color.name} ({color.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Transaction Type
+                </label>
+                <select
+                  value={formData.transaction_type}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      transaction_type: e.target.value,
+                    })
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="IN">Stock In</option>
+                  <option value="OUT">Stock Out</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.quantity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, quantity: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Notes
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  rows="3"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Add Transaction
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default Inventory;
+}

@@ -1,20 +1,22 @@
+import { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import { useState } from "react";
 import Layout from "./components/Layout";
-import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Orders from "./pages/Orders";
+import NewOrderPartySelection from "./pages/orders/new";
+import OrderForm from "./pages/orders/new/form";
 import Party from "./pages/Party";
 import Color from "./pages/Color";
 import RouteManagement from "./pages/RouteManagement";
+import SubAdmin from "./pages/SubAdmin";
 import Inventory from "./pages/Inventory";
 import Report from "./pages/Report";
-import Orders from "./pages/Orders";
-import SubAdmin from "./pages/SubAdmin";
+import Login from "./pages/Login";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -36,27 +38,23 @@ function App() {
             )
           }
         />
-
-        {/* Protected Routes */}
         <Route
           path="/"
           element={
             isAuthenticated ? <Layout /> : <Navigate to="/login" replace />
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="orders/new" element={<NewOrderPartySelection />} />
+          <Route path="orders/new/form" element={<OrderForm />} />
           <Route path="party" element={<Party />} />
           <Route path="color" element={<Color />} />
           <Route path="route" element={<RouteManagement />} />
+          <Route path="sub-admin" element={<SubAdmin />} />
           <Route path="inventory" element={<Inventory />} />
           <Route path="report" element={<Report />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="subadmin" element={<SubAdmin />} />
         </Route>
-
-        {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

@@ -3,47 +3,35 @@ import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 
 const Login = ({ onLogin }) => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const [errors, setErrors] = useState({});
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    }
-    return newErrors;
+  const validatePin = () => {
+    const storedPin = import.meta.env.VITE_2FA_PIN;
+    return pin === storedPin;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length === 0) {
+
+    if (!pin) {
+      setError("PIN is required");
+      return;
+    }
+
+    if (validatePin()) {
       onLogin();
     } else {
-      setErrors(newErrors);
+      setError("Invalid PIN");
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+  const handlePinChange = (e) => {
+    const value = e.target.value;
+    if (value.length <= 6) {
+      // Limit PIN to 6 digits
+      setPin(value);
+      setError("");
     }
   };
 
@@ -62,7 +50,9 @@ const Login = ({ onLogin }) => {
           className="text-center mb-8"
         >
           <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
-          <p className="text-gray-600 mt-2">Please sign in to continue</p>
+          <p className="text-gray-600 mt-2">
+            Please enter your PIN to continue
+          </p>
         </motion.div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -72,44 +62,19 @@ const Login = ({ onLogin }) => {
             transition={{ delay: 0.3 }}
           >
             <label className="block text-gray-700 text-sm font-bold mb-2">
-              Email Address
+              PIN
             </label>
             <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
+              type="number"
+              value={pin}
+              onChange={handlePinChange}
               className={`w-full px-4 py-3 rounded-lg border ${
-                errors.email ? "border-red-500" : "border-gray-300"
+                error ? "border-red-500" : "border-gray-300"
               } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
-              placeholder="Enter your email"
+              placeholder="Enter 6-digit PIN"
+              maxLength={6}
             />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-            )}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                errors.password ? "border-red-500" : "border-gray-300"
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
-              placeholder="Enter your password"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-            )}
+            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
           </motion.div>
 
           <motion.div
@@ -123,7 +88,7 @@ const Login = ({ onLogin }) => {
                 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                 transform transition-all duration-300 hover:scale-[1.02]"
             >
-              Sign In
+              Login
             </button>
           </motion.div>
         </form>
@@ -134,9 +99,7 @@ const Login = ({ onLogin }) => {
           transition={{ delay: 0.6 }}
           className="mt-6 text-center"
         >
-          <p className="text-sm text-gray-600">
-            Demo credentials: admin@admin.com / admin
-          </p>
+          <p className="text-sm text-gray-600">Demo PIN: 123456</p>
         </motion.div>
       </motion.div>
     </div>

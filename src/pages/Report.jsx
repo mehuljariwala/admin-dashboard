@@ -1,148 +1,273 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { HiChevronDown } from "react-icons/hi";
+import {
+  HiChartBar,
+  HiCurrencyRupee,
+  HiShoppingCart,
+  HiUserGroup,
+} from "react-icons/hi";
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from "recharts";
 
 const Report = () => {
-  const [stockFilter, setStockFilter] = useState("All Stock");
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState("This Week");
+  const periods = ["Today", "This Week", "This Month", "This Year"];
 
-  const filters = ["All Stock", "Minimum Stock", "Maximum Stock"];
-
-  const reportData = [
-    { color: "#ff0000", name: "Red", fiveTar: 2, threeTar: 18, yarn: 7 },
-    { color: "#f716ec", name: "Rani", fiveTar: 7, threeTar: 20, yarn: 12 },
-    { color: "#4169e1", name: "R Blue", fiveTar: 16, threeTar: 25, yarn: 31 },
-    { color: "#008000", name: "Green", fiveTar: -9, threeTar: 4, yarn: 7 },
-    { color: "#ffa500", name: "Orange", fiveTar: 19, threeTar: 18, yarn: 43 },
-    { color: "#800080", name: "Jambli", fiveTar: 9, threeTar: 6, yarn: 18 },
-    { color: "#ff00ff", name: "Majenta", fiveTar: -2, threeTar: -4, yarn: 12 },
-    { color: "#40e0d0", name: "Firozi", fiveTar: 0, threeTar: 3, yarn: 5 },
-    { color: "#006400", name: "Rama", fiveTar: -7, threeTar: -7, yarn: -23 },
-    { color: "#90ee90", name: "Perot", fiveTar: 4, threeTar: 7, yarn: 5 },
-    { color: "#dc143c", name: "Gajari", fiveTar: 1, threeTar: 0, yarn: 2 },
-    { color: "#d2b48c", name: "Chiku", fiveTar: 2, threeTar: 0, yarn: -38 },
-    { color: "#98ff98", name: "C Green", fiveTar: 13, threeTar: -4, yarn: 15 },
-    { color: "#8b4513", name: "Oninen", fiveTar: 2, threeTar: 3, yarn: -1 },
-    { color: "#32cd32", name: "L Green", fiveTar: 8, threeTar: 4, yarn: 13 },
-    { color: "#98fb98", name: "L Perot", fiveTar: 3, threeTar: -2, yarn: 19 },
-    { color: "#000000", name: "Black", fiveTar: 9, threeTar: -1, yarn: 22 },
-    { color: "#800000", name: "Mahrron", fiveTar: -5, threeTar: 4, yarn: 23 },
+  // Sample data for charts
+  const salesData = [
+    { name: "Mon", sales: 4000 },
+    { name: "Tue", sales: 3000 },
+    { name: "Wed", sales: 2000 },
+    { name: "Thu", sales: 2780 },
+    { name: "Fri", sales: 1890 },
+    { name: "Sat", sales: 2390 },
+    { name: "Sun", sales: 3490 },
   ];
 
-  const getStockClass = (value) => {
-    if (value < 0) return "bg-red-100 text-red-800";
-    if (value === 0) return "bg-gray-100 text-gray-800";
-    return "bg-white text-gray-800";
-  };
+  const categoryData = [
+    { name: "Cetionic", value: 400 },
+    { name: "Litchy", value: 300 },
+    { name: "Polyester", value: 300 },
+    { name: "Multy", value: 200 },
+  ];
+
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+
+  const stats = [
+    {
+      title: "Total Sales",
+      value: "₹45,231",
+      change: "+12.5%",
+      icon: HiCurrencyRupee,
+      color: "bg-blue-500",
+    },
+    {
+      title: "Total Orders",
+      value: "126",
+      change: "+8.2%",
+      icon: HiShoppingCart,
+      color: "bg-green-500",
+    },
+    {
+      title: "Active Parties",
+      value: "48",
+      change: "+3.1%",
+      icon: HiUserGroup,
+      color: "bg-purple-500",
+    },
+  ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Inventory Report
+    <div className="p-4 md:p-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h1 className="text-xl md:text-2xl font-semibold text-gray-800">
+          Reports & Analytics
         </h1>
-        <div className="relative">
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center justify-between w-48 px-4 py-2 bg-white border rounded-md shadow-sm hover:bg-gray-50"
-          >
-            <span>{stockFilter}</span>
-            <HiChevronDown
-              className={`w-5 h-5 transition-transform ${
-                showDropdown ? "transform rotate-180" : ""
+        <div className="flex gap-2 overflow-x-auto">
+          {periods.map((period) => (
+            <button
+              key={period}
+              onClick={() => setSelectedPeriod(period)}
+              className={`px-4 py-2 rounded-md whitespace-nowrap ${
+                selectedPeriod === period
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
-            />
-          </button>
-          {showDropdown && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute z-10 w-48 mt-1 bg-white border rounded-md shadow-lg"
             >
-              {filters.map((filter) => (
-                <button
-                  key={filter}
-                  className={`block w-full px-4 py-2 text-left hover:bg-gray-50 ${
-                    filter === stockFilter ? "bg-blue-50 text-blue-600" : ""
-                  }`}
-                  onClick={() => {
-                    setStockFilter(filter);
-                    setShowDropdown(false);
-                  }}
-                >
-                  {filter}
-                </button>
-              ))}
-            </motion.div>
-          )}
+              {period}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Colour Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                5 Tar
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                3 Tar
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Yarn
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {reportData.map((item, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div
-                    className="w-6 h-6 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  ></div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {item.name}
-                </td>
-                <td
-                  className={`px-6 py-4 whitespace-nowrap text-sm ${getStockClass(
-                    item.fiveTar
-                  )}`}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {stats.map((stat) => (
+          <div key={stat.title} className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">{stat.title}</p>
+                <h3 className="text-2xl font-semibold mt-1">{stat.value}</h3>
+                <p
+                  className={`text-sm mt-1 ${
+                    stat.change.startsWith("+")
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
                 >
-                  {item.fiveTar}
-                </td>
-                <td
-                  className={`px-6 py-4 whitespace-nowrap text-sm ${getStockClass(
-                    item.threeTar
-                  )}`}
-                >
-                  {item.threeTar}
-                </td>
-                <td
-                  className={`px-6 py-4 whitespace-nowrap text-sm ${getStockClass(
-                    item.yarn
-                  )}`}
-                >
-                  {item.yarn}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  {stat.change} from last period
+                </p>
+              </div>
+              <div className={`p-3 rounded-full ${stat.color}`}>
+                <stat.icon className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
-    </motion.div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Sales Trend */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">Sales Trend</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={salesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#0088FE"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Category Distribution */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">Sales by Category</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Products */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">Top Products</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Product
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Sales
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Growth
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {[
+                  { name: "Red", sales: "1,234", growth: "+12.3%" },
+                  { name: "Blue", sales: "987", growth: "+8.1%" },
+                  { name: "Green", sales: "756", growth: "+6.5%" },
+                  { name: "Yellow", sales: "543", growth: "+4.2%" },
+                ].map((product) => (
+                  <tr key={product.name}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {product.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {product.sales}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                      {product.growth}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+          <div className="space-y-4">
+            {[
+              {
+                type: "order",
+                message: "New order from Party A",
+                time: "5 minutes ago",
+              },
+              {
+                type: "stock",
+                message: "Stock updated for Red color",
+                time: "1 hour ago",
+              },
+              {
+                type: "party",
+                message: "New party added: XYZ Textiles",
+                time: "2 hours ago",
+              },
+              {
+                type: "order",
+                message: "Order completed for Party B",
+                time: "3 hours ago",
+              },
+            ].map((activity, index) => (
+              <div key={index} className="flex items-start gap-4">
+                <div
+                  className={`p-2 rounded-full ${
+                    activity.type === "order"
+                      ? "bg-blue-100 text-blue-600"
+                      : activity.type === "stock"
+                      ? "bg-green-100 text-green-600"
+                      : "bg-purple-100 text-purple-600"
+                  }`}
+                >
+                  {activity.type === "order" ? (
+                    <HiShoppingCart className="w-5 h-5" />
+                  ) : activity.type === "stock" ? (
+                    <HiChartBar className="w-5 h-5" />
+                  ) : (
+                    <HiUserGroup className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-900">{activity.message}</p>
+                  <p className="text-xs text-gray-500">{activity.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,139 +1,145 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { HiSearch } from "react-icons/hi";
-import PropTypes from "prop-types";
+import { useState, useEffect } from "react";
+import { getRoutes, addRoute, updateRoute, deleteRoute } from "../lib/supabase";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import Shimmer from "../components/Shimmer";
+import AddRouteModal from "../components/AddRouteModal";
 
-const RouteForm = ({ onClose }) => {
-  const [routeName, setRouteName] = useState("");
+export default function RouteManagement() {
+  const [routes, setRoutes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingRoute, setEditingRoute] = useState(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission
-    onClose();
+  useEffect(() => {
+    loadRoutes();
+  }, []);
+
+  const loadRoutes = async () => {
+    try {
+      setLoading(true);
+      const data = await getRoutes();
+      setRoutes(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-lg shadow-md p-6 mb-6"
-    >
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Add Route</h2>
-        <button
-          onClick={onClose}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          Back
-        </button>
-      </div>
+  const handleSave = async (formData) => {
+    try {
+      if (editingRoute) {
+        await updateRoute(editingRoute.id, formData);
+      } else {
+        await addRoute(formData);
+      }
+      loadRoutes();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Route Name :-
-          </label>
-          <input
-            type="text"
-            value={routeName}
-            onChange={(e) => setRouteName(e.target.value)}
-            className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter route name"
-          />
-        </div>
-        <div className="flex gap-2">
+  const handleEdit = (route) => {
+    setEditingRoute(route);
+    setShowAddModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this route?")) {
+      try {
+        await deleteRoute(id);
+        loadRoutes();
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingRoute(null);
+  };
+
+  if (loading)
+    return (
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Route Management</h1>
           <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </motion.div>
-  );
-};
-
-RouteForm.propTypes = {
-  onClose: PropTypes.func.isRequired,
-};
-
-const RouteManagement = () => {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [routes] = useState([
-    { id: 3, name: "BHATAR" },
-    { id: 2, name: "SONAL" },
-    { id: 1, name: "LIMBAYAT" },
-  ]);
-
-  if (showAddForm) {
-    return <RouteForm onClose={() => setShowAddForm(false)} />;
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800">Manage Route</h1>
-        <div className="flex gap-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search here..."
-              className="pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            />
-            <HiSearch
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-          </div>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            disabled
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 opacity-50 cursor-not-allowed"
           >
             Add Route
           </button>
         </div>
+        <Shimmer rows={5} />
+      </div>
+    );
+
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+
+  return (
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Route Management</h1>
+        <button
+          onClick={() => {
+            setEditingRoute(null);
+            setShowAddModal(true);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Add Route
+        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Id
+                Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Route Name
+                Description
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Action
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {routes.map((route) => (
-              <tr key={route.id} className="hover:bg-gray-50">
+              <tr key={route.id}>
+                <td className="px-6 py-4 whitespace-nowrap">{route.name}</td>
+                <td className="px-6 py-4">{route.description}</td>
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      route.status === "Enable"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {route.status}
+                  </span>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {route.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {route.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded">
-                    Delete
+                  <button
+                    onClick={() => handleEdit(route)}
+                    className="text-blue-600 hover:text-blue-900 mr-3"
+                  >
+                    <FaEdit className="inline" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(route.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    <FaTrash className="inline" />
                   </button>
                 </td>
               </tr>
@@ -141,8 +147,15 @@ const RouteManagement = () => {
           </tbody>
         </table>
       </div>
-    </motion.div>
-  );
-};
 
-export default RouteManagement;
+      {showAddModal && (
+        <AddRouteModal
+          isEdit={!!editingRoute}
+          route={editingRoute}
+          onClose={handleCloseModal}
+          onSave={handleSave}
+        />
+      )}
+    </div>
+  );
+}
