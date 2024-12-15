@@ -1,21 +1,22 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 
 const Login = ({ onLogin }) => {
-  const [pin, setPin] = useState("");
+  const [pins, setPins] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
+  const inputRefs = useRef([]);
 
   const validatePin = () => {
     const storedPin = import.meta.env.VITE_2FA_PIN;
-    return pin === storedPin;
+    return pins.join("") === storedPin;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!pin) {
-      setError("PIN is required");
+    if (pins.some((digit) => !digit)) {
+      setError("All PIN digits are required");
       return;
     }
 
@@ -26,12 +27,25 @@ const Login = ({ onLogin }) => {
     }
   };
 
-  const handlePinChange = (e) => {
-    const value = e.target.value;
-    if (value.length <= 6) {
-      // Limit PIN to 6 digits
-      setPin(value);
+  const handlePinChange = (value, index) => {
+    const newValue = value.replace(/[^0-9]/g, "");
+    if (newValue.length <= 1) {
+      const newPins = [...pins];
+      newPins[index] = newValue;
+      setPins(newPins);
       setError("");
+
+      // Auto-focus next input
+      if (newValue.length === 1 && index < 5) {
+        inputRefs.current[index + 1].focus();
+      }
+    }
+  };
+
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !pins[index] && index > 0) {
+      // Focus previous input on backspace if current input is empty
+      inputRefs.current[index - 1].focus();
     }
   };
 
@@ -64,16 +78,23 @@ const Login = ({ onLogin }) => {
             <label className="block text-gray-700 text-sm font-bold mb-2">
               PIN
             </label>
-            <input
-              type="number"
-              value={pin}
-              onChange={handlePinChange}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                error ? "border-red-500" : "border-gray-300"
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
-              placeholder="Enter 6-digit PIN"
-              maxLength={6}
-            />
+            <div className="flex gap-2 justify-between">
+              {pins.map((pin, index) => (
+                <input
+                  key={index}
+                  ref={(el) => (inputRefs.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  value={pin}
+                  onChange={(e) => handlePinChange(e.target.value, index)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  className={`w-12 h-12 text-center text-xl rounded-lg border 
+                    ${error ? "border-red-500" : "border-gray-300"}
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
+                  maxLength={1}
+                />
+              ))}
+            </div>
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
           </motion.div>
 

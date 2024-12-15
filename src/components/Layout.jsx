@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Sidebar from "./Sidebar";
+import PropTypes from "prop-types";
 
-const Layout = () => {
+const Layout = ({ onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -50,7 +51,11 @@ const Layout = () => {
             transition={{ duration: 0.3 }}
             className={`${isMobile ? "fixed" : "relative"} z-30`}
           >
-            <Sidebar setIsSidebarOpen={setIsSidebarOpen} isMobile={isMobile} />
+            <Sidebar
+              setIsSidebarOpen={setIsSidebarOpen}
+              isMobile={isMobile}
+              onLogout={onLogout}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -99,6 +104,10 @@ const Layout = () => {
       </div>
     </div>
   );
+};
+
+Layout.propTypes = {
+  onLogout: PropTypes.func.isRequired,
 };
 
 export default Layout;

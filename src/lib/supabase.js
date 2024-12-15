@@ -16,6 +16,37 @@ export const getColorCategories = async () => {
   return data;
 };
 
+export const addColorCategory = async (categoryData) => {
+  const { data, error } = await supabase
+    .from("color_categories")
+    .insert([categoryData])
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
+// Color Subcategories
+export const getColorSubcategories = async () => {
+  const { data, error } = await supabase
+    .from("color_subcategories")
+    .select("*")
+    .order("display_order", { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
+
+export const addColorSubcategory = async (subcategoryData) => {
+  const { data, error } = await supabase
+    .from("color_subcategories")
+    .insert([subcategoryData])
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
 // Colors
 export const getColors = async () => {
   const { data, error } = await supabase
@@ -23,7 +54,15 @@ export const getColors = async () => {
     .select(
       `
       *,
-      category:color_categories(name)
+      category:color_categories(
+        id,
+        name
+      ),
+      subcategory:color_subcategories(
+        id,
+        name,
+        category_id
+      )
     `
     )
     .order("display_order", { ascending: true });
@@ -35,7 +74,14 @@ export const getColors = async () => {
 export const addColor = async (colorData) => {
   const { data, error } = await supabase
     .from("colors")
-    .insert([colorData])
+    .insert([
+      {
+        ...colorData,
+        min_stock: colorData.min_stock || 0,
+        max_stock: colorData.max_stock || 100,
+        color_code: colorData.color_code || "#000000",
+      },
+    ])
     .select();
 
   if (error) throw error;
@@ -45,7 +91,12 @@ export const addColor = async (colorData) => {
 export const updateColor = async (id, updates) => {
   const { data, error } = await supabase
     .from("colors")
-    .update(updates)
+    .update({
+      ...updates,
+      min_stock: updates.min_stock || 0,
+      max_stock: updates.max_stock || 100,
+      color_code: updates.color_code || "#000000",
+    })
     .eq("id", id)
     .select();
 

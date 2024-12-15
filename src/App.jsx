@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -19,10 +19,21 @@ import Report from "./pages/Report";
 import Login from "./pages/Login";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem("isAuthenticated") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("isAuthenticated", isAuthenticated);
+  }, [isAuthenticated]);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem("isAuthenticated");
   };
 
   return (
@@ -41,7 +52,11 @@ function App() {
         <Route
           path="/"
           element={
-            isAuthenticated ? <Layout /> : <Navigate to="/login" replace />
+            isAuthenticated ? (
+              <Layout onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         >
           <Route path="dashboard" element={<Dashboard />} />

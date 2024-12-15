@@ -39,7 +39,8 @@ const Color = () => {
   const filteredColors = colors.filter(
     (color) =>
       color.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      color.category.name.toLowerCase().includes(searchQuery.toLowerCase())
+      color.category?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      color.subcategory?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getStockClass = (stock) => {
@@ -157,12 +158,15 @@ const Color = () => {
                 <div className="flex items-center gap-2">
                   <div
                     className="w-6 h-6 rounded-full border"
-                    style={{ backgroundColor: color.name.toLowerCase() }}
+                    style={{ backgroundColor: color.color_code }}
                   />
                   <h3 className="font-medium text-gray-900">{color.name}</h3>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
-                  Category: {color.category.name}
+                  Category: {color.category?.name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Subcategory: {color.subcategory?.name}
                 </p>
                 <span
                   className={`mt-2 inline-block px-3 py-1 text-sm font-semibold rounded-full ${getStockClass(
@@ -221,6 +225,9 @@ const Color = () => {
                 Category
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Subcategory
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Stock
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -238,13 +245,16 @@ const Color = () => {
                   <div className="flex items-center">
                     <div
                       className="w-6 h-6 rounded-full border mr-2"
-                      style={{ backgroundColor: color.name.toLowerCase() }}
+                      style={{ backgroundColor: color.color_code }}
                     />
                     <span className="text-sm text-gray-900">{color.name}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {color.category.name}
+                  {color.category?.name}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {color.subcategory?.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
